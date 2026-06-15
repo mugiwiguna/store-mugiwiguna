@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { Check, ChevronRight, CreditCard, Truck, ShoppingBag } from "lucide-react";
+import { ChevronRight, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/data/products";
 
@@ -12,19 +12,19 @@ type Step = "shipping" | "payment" | "confirm";
 const steps: { id: Step; label: string }[] = [
   { id: "shipping", label: "Shipping" },
   { id: "payment", label: "Payment" },
-  { id: "confirm", label: "Confirm" },
+  { id: "confirm", label: "Review" },
 ];
 
 const paymentMethods = [
-  { id: "bank", name: "Bank Transfer", desc: "BCA, Mandiri, BNI, BRI", price: 0 },
-  { id: "ewallet", name: "E-Wallet", desc: "OVO, GoPay, Dana", price: 0 },
-  { id: "card", name: "Credit Card", desc: "Visa, Mastercard", price: 2.5 },
-  { id: "cod", name: "Cash on Delivery", desc: "Available for selected areas", price: 25000 },
+  { id: "bank", name: "Bank Transfer", desc: "BCA, Mandiri, BNI, BRI", fee: 0 },
+  { id: "ewallet", name: "E-Wallet", desc: "OVO, GoPay, Dana", fee: 0 },
+  { id: "card", name: "Credit Card", desc: "Visa, Mastercard", fee: 0.025 },
+  { id: "cod", name: "Cash on Delivery", desc: "Available for selected areas", fee: 25000 },
 ];
 
 const shippingMethods = [
-  { id: "standard", name: "Standard Shipping", eta: "2-5 business days", price: 0, minOrder: 500000 },
-  { id: "express", name: "Express Shipping", eta: "1-2 business days", price: 35000, minOrder: 0 },
+  { id: "standard", name: "Standard", eta: "2-5 days", price: 0, minOrder: 500000 },
+  { id: "express", name: "Express", eta: "1-2 days", price: 35000, minOrder: 0 },
 ];
 
 export default function CheckoutPage() {
@@ -41,52 +41,34 @@ export default function CheckoutPage() {
     address: "",
     city: "",
     postalCode: "",
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    cardName: "",
   });
 
   const totalPrice = getTotalPrice();
-  const shippingCost = shippingMethods.find((s) => s.id === selectedShipping)?.price || 0;
-  const paymentFee = selectedPayment === "card" ? Math.round(totalPrice * 0.025) : selectedPayment === "cod" ? 25000 : 0;
+  const shipping = shippingMethods.find((s) => s.id === selectedShipping)!;
+  const payment = paymentMethods.find((p) => p.id === selectedPayment)!;
+
+  const shippingCost = shipping.price === 0 && totalPrice >= shipping.minOrder ? 0 : shipping.price;
+  const paymentFee = payment.fee && typeof payment.fee === "number"
+    ? (payment.fee >= 1 ? payment.fee : Math.round(totalPrice * payment.fee))
+    : 0;
   const grandTotal = totalPrice + shippingCost + paymentFee;
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+  const isFreeShipping = shipping.id === "standard" && totalPrice >= 500000;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const nextStep = () => {
-    const nextIndex = currentStepIndex + 1;
-    if (nextIndex < steps.length) {
-      setCurrentStep(steps[nextIndex].id);
-    }
-  };
-
-  const prevStep = () => {
-    const prevIndex = currentStepIndex - 1;
-    if (prevIndex >= 0) {
-      setCurrentStep(steps[prevIndex].id);
-    }
-  };
-
-  if (!isLoaded) {
-    return (
-      <div className="container py-16 text-center">
-        <div className="animate-pulse">Loading...</div>
-      </div>
-    );
-  }
+  if (!isLoaded) return null;
 
   if (items.length === 0) {
     return (
-      <div className="container py-16 text-center">
-        <ShoppingBag className="w-16 h-16 text-[var(--text-placeholder)] mx-auto mb-4" />
-        <h1 className="text-2xl font-semibold mb-2">Your cart is empty</h1>
-        <p className="text-[var(--text-secondary)] mb-6">Add some items before checking out.</p>
-        <Link href="/products" className="btn btn--primary">
+      <div className="container py-20 text-center max-w-sm mx-auto">
+        <ShoppingBag className="w-12 h-12 text-notion-gray/30 mx-auto mb-4" />
+        <h1 className="text-lg font-medium text-notion-black mb-1.5">Your cart is empty</h1>
+        <p className="text-sm text-notion-gray mb-5">Add some items before checking out.</p>
+        <Link href="/products" className="inline-flex items-center justify-center h-9 px-5 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded transition-colors">
           Continue Shopping
         </Link>
       </div>
@@ -95,178 +77,99 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-8">
-      {/* User Info */}
+      {/* User info */}
       {user && (
-        <div className="bg-[var(--accent-subtle)] border border-[var(--accent-primary)]/20 rounded-lg px-4 py-3 mb-6 text-sm">
-          Logged in as <span className="font-medium">{user.emailAddresses[0]?.emailAddress}</span>
+        <div className="text-[13px] text-notion-gray mb-4 px-4 py-2.5 bg-white border border-notion-border rounded">
+          Signed in as <span className="font-medium text-notion-black">{user.emailAddresses[0]?.emailAddress}</span>
         </div>
       )}
 
       {/* Steps */}
-      <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-2">
-        {steps.map((step, index) => {
-          const isDone = index < currentStepIndex;
-          const isActive = step.id === currentStep;
-          return (
-            <div key={step.id} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-2 text-sm font-medium ${
-                  isDone
-                    ? "text-[var(--success)]"
-                    : isActive
-                    ? "text-[var(--text-primary)]"
-                    : "text-[var(--text-placeholder)]"
-                }`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                    isDone
-                      ? "bg-[var(--success)] text-white"
-                      : isActive
-                      ? "bg-[var(--accent-primary)] text-white"
-                      : "border border-current"
-                  }`}
-                >
-                  {isDone ? <Check className="w-3 h-3" /> : index + 1}
-                </div>
-                <span className="hidden sm:inline">{step.label}</span>
-              </div>
-              {index < steps.length - 1 && (
-                <ChevronRight className="w-4 h-4 text-[var(--text-placeholder)]" />
-              )}
-            </div>
-          );
-        })}
+      <div className="flex items-center gap-3 mb-6 text-[13px]">
+        {steps.map((step, i) => (
+          <div key={step.id} className="flex items-center gap-3">
+            <span className={i <= currentStepIndex ? "text-notion-black font-medium" : "text-notion-gray"}>{step.label}</span>
+            {i < steps.length - 1 && <ChevronRight className="w-3.5 h-3.5 text-notion-border" />}
+          </div>
+        ))}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Form */}
+        {/* Form */}
         <div className="lg:col-span-2">
-          <div className="bg-white border border-[var(--border-default)] rounded-xl p-6">
-            {/* Shipping Step */}
+          <div className="bg-white border border-notion-border rounded p-6">
+
+            {/* SHIPPING */}
             {currentStep === "shipping" && (
               <>
-                <h2 className="text-lg font-semibold mb-6">Shipping Information</h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <h2 className="text-sm font-medium text-notion-black mb-5">Shipping Information</h2>
+                <div className="space-y-3.5">
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-sm font-medium mb-1">First Name</label>
-                      <input
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="John"
-                      />
+                      <label className="block text-[13px] text-notion-black mb-1">First Name</label>
+                      <input name="firstName" value={formData.firstName} onChange={handleInputChange}
+                        className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Last Name</label>
-                      <input
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="Doe"
-                      />
+                      <label className="block text-[13px] text-notion-black mb-1">Last Name</label>
+                      <input name="lastName" value={formData.lastName} onChange={handleInputChange}
+                        className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Email</label>
-                    <input
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                      placeholder="john@example.com"
-                    />
+                    <label className="block text-[13px] text-notion-black mb-1">Email</label>
+                    <input name="email" type="email" value={formData.email} onChange={handleInputChange}
+                      className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Phone</label>
-                    <input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                      placeholder="+62 812 3456 7890"
-                    />
+                    <label className="block text-[13px] text-notion-black mb-1">Phone</label>
+                    <input name="phone" value={formData.phone} onChange={handleInputChange}
+                      className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" placeholder="+62 812 3456 7890" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Address</label>
-                    <input
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                      placeholder="Jl. Sudirman No. 123"
-                    />
+                    <label className="block text-[13px] text-notion-black mb-1">Address</label>
+                    <input name="address" value={formData.address} onChange={handleInputChange}
+                      className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3.5">
                     <div>
-                      <label className="block text-sm font-medium mb-1">City</label>
-                      <input
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="Jakarta"
-                      />
+                      <label className="block text-[13px] text-notion-black mb-1">City</label>
+                      <input name="city" value={formData.city} onChange={handleInputChange}
+                        className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Postal Code</label>
-                      <input
-                        name="postalCode"
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="12345"
-                      />
+                      <label className="block text-[13px] text-notion-black mb-1">Postal Code</label>
+                      <input name="postalCode" value={formData.postalCode} onChange={handleInputChange}
+                        className="w-full h-9 px-3 bg-surface border border-notion-border rounded text-sm placeholder:text-notion-gray/50 focus:outline-none focus:border-notion-black transition-colors" />
                     </div>
                   </div>
 
-                  {/* Shipping Methods */}
-                  <div className="pt-4 border-t border-[var(--border-default)]">
-                    <h3 className="text-sm font-semibold mb-3">Shipping Method</h3>
-                    <div className="space-y-3">
-                      {shippingMethods.map((method) => (
-                        <label
-                          key={method.id}
-                          className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                            selectedShipping === method.id
-                              ? "border-[var(--accent-primary)] bg-[var(--accent-subtle)]"
-                              : "border-[var(--border-default)] hover:border-[var(--border-hover)]"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="shipping"
-                            value={method.id}
-                            checked={selectedShipping === method.id}
-                            onChange={() => setSelectedShipping(method.id)}
-                            className="sr-only"
-                          />
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            selectedShipping === method.id
-                              ? "border-[var(--accent-primary)]"
-                              : "border-[var(--border-default)]"
-                          }`}>
-                            {selectedShipping === method.id && (
-                              <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-primary)]" />
-                            )}
+                  <hr className="border-notion-border my-2" />
+
+                  {/* Shipping Method */}
+                  <div>
+                    <h3 className="text-[13px] font-medium text-notion-black mb-2">Shipping Method</h3>
+                    <div className="space-y-2">
+                      {shippingMethods.map((m) => (
+                        <label key={m.id} className={`flex items-center justify-between p-3 border rounded cursor-pointer transition-colors ${
+                          selectedShipping === m.id ? "border-notion-black bg-selected" : "border-notion-border hover:border-notion-gray"
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              selectedShipping === m.id ? "border-notion-black" : "border-notion-border"
+                            }`}>
+                              {selectedShipping === m.id && <div className="w-2 h-2 rounded-full bg-notion-black" />}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-notion-black">{m.name}</div>
+                              <div className="text-[12px] text-notion-gray">{m.eta}</div>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium">{method.name}</div>
-                            <div className="text-xs text-[var(--text-secondary)]">{method.eta}</div>
-                          </div>
-                          <div className="text-sm font-semibold">
-                            {method.price === 0 ? (
-                              totalPrice >= 500000 ? (
-                                <span className="text-[var(--success)]">Free</span>
-                              ) : (
-                                formatPrice(method.price)
-                              )
+                          <div className="text-sm font-medium text-notion-black">
+                            {m.price === 0 && totalPrice >= m.minOrder ? (
+                              <span className="text-accent">Free</span>
                             ) : (
-                              formatPrice(method.price)
+                              m.price === 0 ? formatPrice(0) : formatPrice(m.price)
                             )}
                           </div>
                         </label>
@@ -274,153 +177,80 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 </div>
-
-                <button onClick={nextStep} className="btn btn--primary btn--lg w-full mt-6">
+                <button onClick={() => setCurrentStep("payment")} className="mt-6 w-full h-9 text-sm font-medium text-white bg-notion-black hover:bg-notion-black/85 rounded transition-colors">
                   Continue to Payment
                 </button>
               </>
             )}
 
-            {/* Payment Step */}
+            {/* PAYMENT */}
             {currentStep === "payment" && (
               <>
-                <h2 className="text-lg font-semibold mb-6">Payment Method</h2>
-                <div className="space-y-3 mb-6">
-                  {paymentMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedPayment === method.id
-                          ? "border-[var(--accent-primary)] bg-[var(--accent-subtle)]"
-                          : "border-[var(--border-default)] hover:border-[var(--border-hover)]"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="payment"
-                        value={method.id}
-                        checked={selectedPayment === method.id}
-                        onChange={() => setSelectedPayment(method.id)}
-                        className="sr-only"
-                      />
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPayment === method.id
-                          ? "border-[var(--accent-primary)]"
-                          : "border-[var(--border-default)]"
-                      }`}>
-                        {selectedPayment === method.id && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-primary)]" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium flex items-center gap-2">
-                          {method.id === "card" && <CreditCard className="w-4 h-4" />}
-                          {method.id === "bank" && <Truck className="w-4 h-4" />}
-                          {method.name}
+                <h2 className="text-sm font-medium text-notion-black mb-5">Payment Method</h2>
+                <div className="space-y-2 mb-6">
+                  {paymentMethods.map((m) => (
+                    <label key={m.id} className={`flex items-center justify-between p-3 border rounded cursor-pointer transition-colors ${
+                      selectedPayment === m.id ? "border-notion-black bg-selected" : "border-notion-border hover:border-notion-gray"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          selectedPayment === m.id ? "border-notion-black" : "border-notion-border"
+                        }`}>
+                          {selectedPayment === m.id && <div className="w-2 h-2 rounded-full bg-notion-black" />}
                         </div>
-                        <div className="text-xs text-[var(--text-secondary)]">{method.desc}</div>
+                        <div>
+                          <div className="text-sm font-medium text-notion-black">{m.name}</div>
+                          <div className="text-[12px] text-notion-gray">{m.desc}</div>
+                        </div>
                       </div>
-                      <div className="text-sm font-semibold">
-                        {method.price === 0 ? "Free" : method.price === 2.5 ? "2.5%" : formatPrice(method.price)}
+                      <div className="text-sm font-medium text-notion-black">
+                        {!m.fee ? "Free" : m.fee >= 1 ? formatPrice(m.fee as number) : `${(m.fee * 100)}%`}
                       </div>
                     </label>
                   ))}
                 </div>
 
-                {selectedPayment === "card" && (
-                  <div className="space-y-4 p-4 bg-[var(--bg-surface)] rounded-lg mb-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Card Number</label>
-                      <input
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="1234 5678 9012 3456"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Expiry</label>
-                        <input
-                          name="expiry"
-                          value={formData.expiry}
-                          onChange={handleInputChange}
-                          className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                          placeholder="MM/YY"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">CVV</label>
-                        <input
-                          name="cvv"
-                          value={formData.cvv}
-                          onChange={handleInputChange}
-                          className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                          placeholder="123"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Cardholder Name</label>
-                      <input
-                        name="cardName"
-                        value={formData.cardName}
-                        onChange={handleInputChange}
-                        className="w-full h-10 px-3 border border-[var(--border-default)] rounded-md text-sm focus:outline-none focus:border-[var(--border-focus)]"
-                        placeholder="John Doe"
-                      />
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex gap-3">
-                  <button onClick={prevStep} className="btn btn--secondary btn--lg">
+                  <button onClick={() => setCurrentStep("shipping")} className="h-9 px-5 text-sm font-medium text-notion-black border border-notion-border rounded hover:bg-hover transition-colors">
                     Back
                   </button>
-                  <button onClick={nextStep} className="btn btn--primary btn--lg flex-1">
+                  <button onClick={() => setCurrentStep("confirm")} className="flex-1 h-9 text-sm font-medium text-white bg-notion-black hover:bg-notion-black/85 rounded transition-colors">
                     Review Order
                   </button>
                 </div>
               </>
             )}
 
-            {/* Confirm Step */}
+            {/* CONFIRM */}
             {currentStep === "confirm" && (
               <>
-                <h2 className="text-lg font-semibold mb-6">Review Your Order</h2>
-
-                <div className="space-y-4 mb-6">
-                  <div className="p-4 bg-[var(--bg-surface)] rounded-lg">
-                    <h3 className="text-sm font-semibold mb-2">Shipping To</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
+                <h2 className="text-sm font-medium text-notion-black mb-5">Review your order</h2>
+                <div className="space-y-3 mb-6 text-sm">
+                  <div className="p-3 bg-surface rounded">
+                    <h3 className="text-[13px] font-medium text-notion-black mb-1">Shipping To</h3>
+                    <p className="text-[13px] text-notion-gray">
                       {formData.firstName} {formData.lastName}<br />
                       {formData.address}<br />
                       {formData.city}, {formData.postalCode}<br />
                       {formData.phone}
                     </p>
                   </div>
-
-                  <div className="p-4 bg-[var(--bg-surface)] rounded-lg">
-                    <h3 className="text-sm font-semibold mb-2">Payment Method</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {paymentMethods.find((m) => m.id === selectedPayment)?.name}
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-[var(--bg-surface)] rounded-lg">
-                    <h3 className="text-sm font-semibold mb-2">Shipping Method</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {shippingMethods.find((s) => s.id === selectedShipping)?.name}
-                    </p>
+                  <div className="flex gap-3">
+                    <div className="flex-1 p-3 bg-surface rounded">
+                      <h3 className="text-[13px] font-medium text-notion-black mb-1">Payment</h3>
+                      <p className="text-[13px] text-notion-gray">{paymentMethods.find(m => m.id === selectedPayment)?.name}</p>
+                    </div>
+                    <div className="flex-1 p-3 bg-surface rounded">
+                      <h3 className="text-[13px] font-medium text-notion-black mb-1">Shipping</h3>
+                      <p className="text-[13px] text-notion-gray">{shippingMethods.find(m => m.id === selectedShipping)?.name}</p>
+                    </div>
                   </div>
                 </div>
-
                 <div className="flex gap-3">
-                  <button onClick={prevStep} className="btn btn--secondary btn--lg">
+                  <button onClick={() => setCurrentStep("payment")} className="h-9 px-5 text-sm font-medium text-notion-black border border-notion-border rounded hover:bg-hover transition-colors">
                     Back
                   </button>
-                  <button className="btn btn--primary btn--lg flex-1">
+                  <button className="flex-1 h-9 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded transition-colors">
                     Place Order — {formatPrice(grandTotal)}
                   </button>
                 </div>
@@ -431,41 +261,43 @@ export default function CheckoutPage() {
 
         {/* Order Summary */}
         <div>
-          <div className="bg-white border border-[var(--border-default)] rounded-xl p-6 sticky top-20">
-            <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
-
-            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
+          <div className="bg-white border border-notion-border rounded p-5 sticky top-16">
+            <h2 className="text-sm font-medium text-notion-black mb-4">Order Summary</h2>
+            <div className="space-y-2.5 mb-4 max-h-56 overflow-y-auto">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  <div className="w-14 h-14 bg-[var(--bg-surface)] rounded-md flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium line-clamp-1">{item.name}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">Qty: {item.quantity}</div>
+                  <div className="w-12 h-12 bg-surface rounded flex-shrink-0 flex items-center justify-center text-notion-gray/30">
+                    <ShoppingBag className="w-5 h-5" />
                   </div>
-                  <div className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium line-clamp-1">{item.name}</div>
+                    <div className="text-[12px] text-notion-gray">Qty: {item.quantity}</div>
+                  </div>
+                  <div className="text-sm font-medium">{formatPrice(item.price * item.quantity)}</div>
                 </div>
               ))}
             </div>
-
-            <div className="space-y-2 pt-4 border-t border-[var(--border-default)]">
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Subtotal</span>
+            <hr className="border-notion-border mb-3" />
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-notion-gray">Subtotal</span>
                 <span>{formatPrice(totalPrice)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Shipping</span>
-                <span>{shippingCost === 0 && totalPrice >= 500000 ? "Free" : formatPrice(shippingCost)}</span>
+              <div className="flex justify-between">
+                <span className="text-notion-gray">Shipping</span>
+                <span>{isFreeShipping ? "Free" : formatPrice(shippingCost)}</span>
               </div>
               {paymentFee > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-[var(--text-secondary)]">Payment Fee</span>
+                <div className="flex justify-between">
+                  <span className="text-notion-gray">Payment fee</span>
                   <span>{formatPrice(paymentFee)}</span>
                 </div>
               )}
-              <div className="flex justify-between pt-2 border-t border-[var(--border-default)] font-semibold">
-                <span>Total</span>
-                <span className="text-lg">{formatPrice(grandTotal)}</span>
-              </div>
+            </div>
+            <hr className="border-notion-border my-3" />
+            <div className="flex justify-between font-medium">
+              <span>Total</span>
+              <span>{formatPrice(grandTotal)}</span>
             </div>
           </div>
         </div>

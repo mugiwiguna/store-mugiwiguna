@@ -1,9 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* ========================================
-   BASE STYLES
+   NOTION DESIGN SYSTEM
    ======================================== */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -21,22 +22,43 @@ body {
   background-color: #F7F6F3;
   color: #37352F;
   min-height: 100vh;
+  font-feature-settings: "tnum";
 }
 
 /* ========================================
-   SCROLLBAR
+   SCROLLBAR (Notion-style)
    ======================================== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F7F6F3;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #E8E8E3;
-  border-radius: 4px;
+  background: #D1D0CB;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #CFCECA;
+  background: #B8B7B2;
+}
+
+/* ========================================
+   CONTAINER
+   ======================================== */
+.container {
+  width: 100%;
+  max-width: 1024px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ========================================
+   SELECTION
+   ======================================== */
+::selection {
+  background: #2383E2;
+  color: #FFFFFF;
 }
