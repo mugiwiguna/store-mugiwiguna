@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/product/ProductCard";
 import { products, categories } from "@/data/products";
 
@@ -9,36 +8,33 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 py-10">
-        <div className="bg-white border border-notion-border rounded p-6">
-          <div className="max-w-md">
-            <h1 className="text-xl font-medium text-notion-black leading-tight mb-2">
-              Quality Products,{" "}
-              <span className="text-accent">Great Prices</span>
-            </h1>
-            <p className="text-sm text-notion-gray leading-relaxed mb-4">
-              Discover our curated collection of premium products with fast shipping across Indonesia.
-            </p>
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-1.5 h-8 px-4 text-sm font-medium text-white bg-notion-black hover:bg-notion-black/85 rounded transition-colors"
-            >
-              Browse Products
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+      <section className="max-w-5xl mx-auto px-6 pt-20 pb-16">
+        <div className="max-w-lg">
+          <h1 className="text-2xl font-semibold tracking-tight leading-tight mb-4">
+            Quality Products,<br />
+            Great Prices
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
+            Discover our curated collection of premium products with fast shipping across Indonesia.
+          </p>
+          <Link
+            href="/products"
+            className="inline-flex items-center justify-center h-10 px-6 text-sm font-semibold text-white bg-[var(--text-primary)] hover:bg-[var(--text-primary)]/85 transition-opacity"
+          >
+            Browse Products
+          </Link>
         </div>
       </section>
 
       {/* Categories */}
-      <section className="max-w-5xl mx-auto px-6 pb-6">
-        <h2 className="text-sm font-medium text-notion-black mb-2.5">Categories</h2>
-        <div className="flex gap-1.5 overflow-x-auto pb-1.5">
+      <section className="max-w-5xl mx-auto px-6 pb-16">
+        <h2 className="text-xs font-semibold tracking-widest uppercase text-[var(--text-secondary)] mb-4">Categories</h2>
+        <div className="flex gap-2 overflow-x-auto pb-2">
           {categories.map((cat) => (
             <Link
               key={cat}
               href={cat === "All Products" ? "/products" : `/products?category=${encodeURIComponent(cat)}`}
-              className="px-3 py-1.5 text-[13px] text-notion-gray bg-white border border-notion-border rounded-full whitespace-nowrap hover:border-notion-gray hover:text-notion-black transition-colors"
+              className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border)] whitespace-nowrap hover:border-[var(--text-primary)] hover:text-[var(--text-primary)] transition-colors"
             >
               {cat}
             </Link>
@@ -47,14 +43,14 @@ export default function HomePage() {
       </section>
 
       {/* Products */}
-      <section className="max-w-5xl mx-auto px-6 pb-14">
-        <div className="flex items-center justify-between mb-3.5">
-          <h2 className="text-sm font-medium text-notion-black">Featured Products</h2>
-          <Link href="/products" className="text-[13px] text-accent hover:text-accent-hover transition-colors">
+      <section className="max-w-5xl mx-auto px-6 pb-24">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xs font-semibold tracking-widest uppercase text-[var(--text-secondary)]">Featured Products</h2>
+          <Link href="/products" className="text-sm font-medium text-[var(--text-primary)] hover:underline underline-offset-2 transition-all">
             View all
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
