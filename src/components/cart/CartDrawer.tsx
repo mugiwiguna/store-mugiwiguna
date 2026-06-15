@@ -10,51 +10,53 @@ export function CartDrawer() {
 
   return (
     <>
-      <div className={`fixed inset-0 bg-black/30 z-[200] transition-opacity duration-200 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} onClick={closeCart} />
-      <aside className={`fixed top-0 right-0 bottom-0 w-full max-w-sm bg-[var(--bg-surface)] z-[201] flex flex-col transition-transform duration-200 ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
-          <h2 className="text-sm font-semibold tracking-tight">Cart ({items.length})</h2>
-          <button onClick={closeCart} className="w-8 h-8 flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors">
-            <X className="w-4 h-4" />
+      <div className={`fixed inset-0 bg-black/40 z-[200] transition-opacity duration-200 ${isOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} onClick={closeCart} />
+      <aside className={`fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-[201] flex flex-col shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <h2 className="text-lg font-bold text-gray-900">Shopping Cart ({items.length})</h2>
+          <button onClick={closeCart} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Close cart">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center pt-16">
-              <ShoppingBag className="w-10 h-10 text-[var(--text-secondary)]/40 mb-4" />
-              <p className="text-sm font-medium mb-1">Your cart is empty</p>
-              <p className="text-[13px] text-[var(--text-secondary)] mb-6">Add products to get started.</p>
-              <button onClick={closeCart} className="h-9 px-5 text-sm font-medium text-white bg-[var(--text-primary)] hover:opacity-85 transition-opacity">
-                Continue shopping
+              <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                <ShoppingBag className="w-8 h-8 text-gray-300" />
+              </div>
+              <p className="text-base font-semibold text-gray-900 mb-1">Your cart is empty</p>
+              <p className="text-sm text-gray-500 mb-6">Add some products to get started.</p>
+              <button onClick={closeCart} className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
+                Continue Shopping
               </button>
             </div>
           ) : (
-            <div className="flex flex-col divide-y divide-[var(--border)]">
+            <div className="flex flex-col gap-4">
               {items.map((item) => (
-                <div key={item.id} className="py-4 first:pt-0 last:pb-0">
-                  <div className="flex gap-3">
-                    <div className="w-16 h-16 bg-[var(--bg-hover)] flex-shrink-0 flex items-center justify-center text-[var(--text-secondary)]/30">
-                      <ShoppingBag className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium leading-snug mb-0.5">{item.name}</h4>
-                      {item.variant && <p className="text-[12px] text-[var(--text-secondary)] mb-1">{item.variant}</p>}
-                      <p className="text-sm font-semibold">{formatPrice(item.price)}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="inline-flex items-center border border-[var(--border)]">
-                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors">
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors">
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <button onClick={() => removeItem(item.id)} className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
+                <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                  <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
+                    <ShoppingBag className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{item.name}</h4>
+                    {item.variant && <p className="text-xs text-gray-500 mb-1">{item.variant}</p>}
+                    <p className="text-sm font-bold text-gray-900 mb-2">{formatPrice(item.price)}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center bg-white border border-gray-200 rounded-lg">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      <button onClick={() => removeItem(item.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -63,26 +65,22 @@ export function CartDrawer() {
           )}
         </div>
 
+        {/* Footer */}
         {items.length > 0 && (
-          <div className="px-5 py-4 border-t border-[var(--border)] bg-[var(--bg-surface)]">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-[var(--text-secondary)]">Subtotal</span>
-              <span className="font-medium">{formatPrice(getTotalPrice())}</span>
+          <div className="px-6 py-5 border-t border-gray-100 bg-white">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="font-semibold">{formatPrice(getTotalPrice())}</span>
             </div>
-            <div className="flex justify-between text-sm text-[var(--text-secondary)] mb-4">
-              <span>Shipping</span>
-              <span>At checkout</span>
+            <div className="flex justify-between text-sm mb-4">
+              <span className="text-gray-500">Shipping</span>
+              <span className="text-gray-500">Calculated at checkout</span>
             </div>
-            <hr className="border-[var(--border)] mb-4" />
-            <div className="flex justify-between text-sm font-semibold mb-4">
-              <span>Total</span>
-              <span>{formatPrice(getTotalPrice())}</span>
-            </div>
-            <Link href="/checkout" onClick={closeCart} className="flex items-center justify-center h-11 text-sm font-semibold text-white bg-[var(--text-primary)] hover:opacity-85 transition-opacity">
+            <Link href="/checkout" onClick={closeCart} className="flex items-center justify-center h-12 w-full bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
               Checkout
             </Link>
-            <button onClick={closeCart} className="w-full mt-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              Continue shopping
+            <button onClick={closeCart} className="w-full mt-3 text-sm font-medium text-gray-500 hover:text-gray-900 text-center transition-colors">
+              Continue Shopping
             </button>
           </div>
         )}
